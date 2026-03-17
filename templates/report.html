@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scan Report</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen">
+
+<div class="max-w-5xl mx-auto p-4">
+
+  <!-- Title -->
+  <h1 class="text-center text-4xl font-extrabold text-red-600 mb-8">
+    Scan Results
+  </h1>
+
+  <!-- Table Card -->
+  <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+
+    <table class="w-full text-left border-collapse">
+      <thead class="bg-slate-200">
+        <tr>
+          <th class="p-4 font-semibold">Check</th>
+          <th class="p-4 font-semibold">Result</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for vuln, status in results.items() %}
+        <tr class="border-t">
+
+          <td class="p-4">{{ vuln }}</td>
+
+          <td class="p-4">
+
+            {% if status == "High" %}
+              <span class="px-3 py-1 rounded-full text-white bg-red-500 font-semibold">
+                High
+              </span>
+
+            {% elif status == "Medium" %}
+              <span class="px-3 py-1 rounded-full text-white bg-yellow-500 font-semibold">
+                Medium
+              </span>
+
+            {% elif status == "Low" %}
+              <span class="px-3 py-1 rounded-full text-white bg-green-500 font-semibold">
+                Low
+              </span>
+
+            {% else %}
+              {{ status }}
+            {% endif %}
+
+          </td>
+
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+  </div>
+
+  <!-- Chart Title -->
+  <h2 class="text-2xl font-bold text-center mt-10 mb-4">
+    Severity Chart
+  </h2>
+
+  <!-- Chart Card -->
+  <div class="bg-white rounded-2xl shadow-xl p-6">
+    <canvas id="severityChart"></canvas>
+  </div>
+
+  <!-- Download Button -->
+  <div class="text-center mt-6">
+    <a href="/download"
+       class="inline-block px-6 py-3 bg-red-600 text-white
+              rounded-lg font-semibold shadow-md
+              hover:bg-red-700 transition">
+      Download PDF Report
+    </a>
+  </div>
+
+</div>
+
+<script>
+
+const results = JSON.parse('{{ results|tojson|safe }}');
+
+const labels = Object.keys(results);
+
+const dataValues = labels.map(label => {
+    const val = results[label];
+    if (val === true || val === "High") return 3;
+    if (val === "Medium" || val === "Potentially Unsafe") return 2;
+    return 1;
+});
+
+new Chart(document.getElementById('severityChart'), {
+    type: 'bar',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Severity Level',
+            data: dataValues,
+            backgroundColor: function(ctx) {
+                const v = ctx.raw;
+                if (v === 3) return 'rgba(239,68,68,0.7)';
+                if (v === 2) return 'rgba(245,158,11,0.7)';
+                return 'rgba(34,197,94,0.7)';
+            },
+            borderWidth: 1
+        }]
+    },
+    options: {
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 3,
+                ticks: {
+                    stepSize: 1,
+                    callback: function(value) {
+                        if (value === 1) return 'Low';
+                        if (value === 2) return 'Medium';
+                        if (value === 3) return 'High';
+                        return value;
+                    }
+                }
+            }
+        }
+    }
+});
+
+</script>
+
+</body>
+</html>
